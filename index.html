@@ -26,23 +26,107 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      z-index: 10;
+      pointer-events: none;
+    }
+    #loading-text {
       color: #8bc34a;
       font-family: monospace;
       font-size: 22px;
       letter-spacing: 2px;
-      z-index: 10;
+    }
+    #loading-bar-bg {
+      width: 220px;
+      height: 8px;
+      background: #2a2a2a;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    #loading-bar {
+      height: 100%;
+      width: 0%;
+      background: #8bc34a;
+      border-radius: 4px;
+      transition: width 0.1s ease-out;
+    }
+    #loading-sub {
+      color: #555;
+      font-family: monospace;
+      font-size: 13px;
+      letter-spacing: 1px;
     }
   </style>
 </head>
 <body>
-  <div id="loading">LADDAR SKOGEN…</div>
+  <div id="loading">
+    <div id="loading-text">LADDAR SKOGEN…</div>
+    <div id="loading-bar-bg"><div id="loading-bar"></div></div>
+    <div id="loading-sub">0%</div>
+  </div>
   <canvas id="glcanvas" tabindex="1"></canvas>
   <script src="mq_js_bundle.js"></script>
   <script>
-    load("skogen.wasm").then(() => {
-      const el = document.getElementById("loading");
-      if (el) el.remove();
-    }).catch(console.error);
+    (async () => {
+      const textEl  = document.getElementById('loading-text');
+      const barEl   = document.getElementById('loading-bar');
+      const subEl   = document.getElementById('loading-sub');
+      const loadEl  = document.getElementById('loading');
+
+      try {
+        // Fetch the WASM with progress tracking
+        const response = await fetch('skogen.wasm');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const contentLength = response.headers.get('Content-Length');
+        const total = contentLength ? parseInt(contentLength, 10) : 0;
+
+        const reader = response.body.getReader();
+        let received = 0;
+        const chunks = [];
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+
+          const pct = total > 0 ? Math.round((received / total) * 100) : null;
+          barEl.style.width = (pct ?? 50) + '%';
+          subEl.textContent = pct != null
+            ? pct + '%'
+            : (received / 1024).toFixed(0) + ' KB';
+        }
+
+        barEl.style.width = '100%';
+        subEl.textContent = '100%';
+        textEl.textContent = 'STARTAR…';
+
+        // Assemble downloaded chunks into a single buffer
+        const total_bytes = chunks.reduce((s, c) => s + c.length, 0);
+        const buffer = new Uint8Array(total_bytes);
+        let pos = 0;
+        for (const chunk of chunks) { buffer.set(chunk, pos); pos += chunk.length; }
+
+        // Create a blob URL so load() reads from memory (no second download)
+        const blob    = new Blob([buffer], { type: 'application/wasm' });
+        const blobUrl = URL.createObjectURL(blob);
+
+        await load(blobUrl);
+
+        URL.revokeObjectURL(blobUrl);
+        loadEl.remove();
+
+      } catch (err) {
+        textEl.textContent = 'FEL VID LADDNING';
+        subEl.textContent  = err.message;
+        barEl.style.background = '#c0392b';
+        console.error(err);
+      }
+    })();
   </script>
 </body>
 </html>
