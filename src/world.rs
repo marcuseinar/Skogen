@@ -292,6 +292,21 @@ impl World {
         items
     }
 
+    pub fn update_roofs(&mut self, player_pos: Vec2, dt: f32) {
+        for b in &mut self.buildings {
+            let inside = b.contains_player(player_pos, TILE_SIZE);
+            let target = if inside { 0.0 } else { 1.0 };
+            let speed  = if inside { 6.0 } else { 3.0 };
+            b.roof_alpha += (target - b.roof_alpha) * dt * speed;
+        }
+    }
+
+    pub fn draw_roofs(&self, cam: &Camera) {
+        for b in &self.buildings {
+            b.draw_roof(cam, TILE_SIZE);
+        }
+    }
+
     pub fn draw(&self, cam: &Camera) {
         let sw = screen_width();
         let sh = screen_height();

@@ -19,6 +19,7 @@ pub struct Building {
     pub th: i32,
     pub containers: Vec<LootContainer>,
     pub label: &'static str,
+    pub roof_alpha: f32,
 }
 
 impl Building {
@@ -30,7 +31,38 @@ impl Building {
             BuildingKind::Camping => (7, 7, "Camping", camping_loot(tx, ty)),
             BuildingKind::Forrad => (3, 3, "Förråd", forrad_loot(tx, ty)),
         };
-        Self { kind, tx, ty, tw, th, containers, label }
+        Self { kind, tx, ty, tw, th, containers, label, roof_alpha: 1.0 }
+    }
+
+    pub fn contains_player(&self, player_pos: Vec2, ts: f32) -> bool {
+        let bx = self.tx as f32 * ts;
+        let by = self.ty as f32 * ts;
+        player_pos.x > bx + ts && player_pos.x < bx + (self.tw as f32 - 1.0) * ts
+            && player_pos.y > by + ts && player_pos.y < by + (self.th as f32 - 1.0) * ts
+    }
+
+    pub fn draw_roof(&self, cam: &Camera, ts: f32) {
+        if self.roof_alpha < 0.01 { return; }
+        let wx = self.tx as f32 * ts;
+        let wy = self.ty as f32 * ts;
+        let ww = self.tw as f32 * ts;
+        let wh = self.th as f32 * ts;
+        if !cam.is_visible(vec2(wx + ww / 2.0, wy + wh / 2.0), ww.max(wh)) { return; }
+        let sp = cam.world_to_screen(vec2(wx, wy));
+        let alpha = self.roof_alpha;
+        let base_col = match self.kind {
+            BuildingKind::Stuga   => Color::new(0.55, 0.35, 0.20, alpha),
+            BuildingKind::Macken  => Color::new(0.65, 0.60, 0.55, alpha),
+            BuildingKind::IcaNara => Color::new(0.70, 0.15, 0.15, alpha),
+            BuildingKind::Camping => Color::new(0.25, 0.45, 0.25, alpha),
+            BuildingKind::Forrad  => Color::new(0.45, 0.30, 0.18, alpha),
+        };
+        draw_rectangle(sp.x, sp.y, ww, wh, base_col);
+        draw_rectangle_lines(sp.x, sp.y, ww, wh, 4.0,
+            Color::new(0.0, 0.0, 0.0, alpha * 0.5));
+        draw_line(sp.x + ww * 0.5, sp.y + 4.0,
+                  sp.x + ww * 0.5, sp.y + wh - 4.0,
+                  2.0, Color::new(0.0, 0.0, 0.0, alpha * 0.3));
     }
 
     pub fn draw_sign(&self, cam: &Camera, ts: f32) {

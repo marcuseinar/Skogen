@@ -6,12 +6,14 @@ mod buildings;
 mod world;
 mod player;
 mod ui;
+mod lighting;
 
 use macroquad::prelude::*;
 use camera::Camera;
 use world::World;
 use player::Player;
 use ui::{draw_hud, TouchControls};
+use lighting::LightSystem;
 
 #[derive(PartialEq)]
 enum GameState {
@@ -36,6 +38,7 @@ async fn main() {
     let mut state = GameState::Playing;
     let mut time_alive = 0.0f32;
     let mut touch_controls = TouchControls::new();
+    let light_system = LightSystem::new();
 
     // Inventory selection state
     let num_keys = [
@@ -64,6 +67,7 @@ async fn main() {
                 }
 
                 world.update_zombies(dt, player.pos);
+                world.update_roofs(player.pos, dt);
 
                 let input = touch_controls.gather_input(&camera);
                 player.update(dt, &mut world, &input);
@@ -83,21 +87,31 @@ async fn main() {
                 clear_background(Color::new(0.2, 0.38, 0.18, 1.0));
                 world.draw(&camera);
                 player.draw(&camera);
+                world.draw_roofs(&camera);
 
-                // Day/night overlay
-                let day_len = 240.0f32; // 4 min cycle
+                // Ambient: bright day → dark night → dawn
+                let day_len = 240.0f32;
                 let t = time_alive % day_len;
-                let night_alpha = if t < day_len * 0.5 {
-                    0.0
+                let frac = t / day_len;
+                let ambient = if frac < 0.5 {
+                    0.85
+                } else if frac < 0.75 {
+                    let p = (frac - 0.5) / 0.25;
+                    0.85 + (0.05 - 0.85) * p
                 } else {
-                    let p = (t - day_len * 0.5) / (day_len * 0.5);
-                    let wave = (p * std::f32::consts::PI).sin();
-                    wave * 0.55
+                    let p = (frac - 0.75) / 0.25;
+                    0.05 + (0.85 - 0.05) * p
                 };
-                if night_alpha > 0.01 {
-                    draw_rectangle(0.0, 0.0, screen_width(), screen_height(),
-                        Color::new(0.0, 0.02, 0.12, night_alpha));
-                }
+
+                // Aux lights: screen-space centres of first 4 buildings
+                let aux: Vec<Vec2> = world.buildings.iter().take(4).map(|b| {
+                    let wx = (b.tx as f32 + b.tw as f32 * 0.5) * camera::TILE_SIZE;
+                    let wy = (b.ty as f32 + b.th as f32 * 0.5) * camera::TILE_SIZE;
+                    camera.world_to_screen(vec2(wx, wy))
+                }).collect();
+
+                let player_sp = camera.world_to_screen(player.pos);
+                light_system.draw(player_sp, &aux, ambient, time_alive);
 
                 draw_hud(&player, time_alive);
                 touch_controls.draw();
