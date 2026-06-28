@@ -47,28 +47,40 @@ impl Building {
         let wy = self.ty as f32 * ts;
         let ww = self.tw as f32 * ts;
         let wh = self.th as f32 * ts;
-        if !cam.is_visible(vec2(wx + ww / 2.0, wy + wh / 2.0), ww.max(wh)) { return; }
-        let sp = cam.world_to_screen(vec2(wx, wy));
+        let mid = vec2(wx + ww * 0.5, wy + wh * 0.5);
+        if !cam.is_visible(mid, ww.max(wh) + 64.0) { return; }
+
         let alpha = self.roof_alpha;
-        let base_col = match self.kind {
+        let col = match self.kind {
             BuildingKind::Stuga   => Color::new(0.55, 0.35, 0.20, alpha),
             BuildingKind::Macken  => Color::new(0.65, 0.60, 0.55, alpha),
             BuildingKind::IcaNara => Color::new(0.70, 0.15, 0.15, alpha),
             BuildingKind::Camping => Color::new(0.25, 0.45, 0.25, alpha),
             BuildingKind::Forrad  => Color::new(0.45, 0.30, 0.18, alpha),
         };
-        draw_rectangle(sp.x, sp.y, ww, wh, base_col);
-        draw_rectangle_lines(sp.x, sp.y, ww, wh, 4.0,
-            Color::new(0.0, 0.0, 0.0, alpha * 0.5));
-        draw_line(sp.x + ww * 0.5, sp.y + 4.0,
-                  sp.x + ww * 0.5, sp.y + wh - 4.0,
-                  2.0, Color::new(0.0, 0.0, 0.0, alpha * 0.3));
+        let edge = Color::new(0.0, 0.0, 0.0, alpha * 0.45);
+
+        // Project four world corners to iso screen for parallelogram roof
+        let nw = cam.world_to_screen(vec2(wx,      wy));
+        let ne = cam.world_to_screen(vec2(wx + ww, wy));
+        let se = cam.world_to_screen(vec2(wx + ww, wy + wh));
+        let sw = cam.world_to_screen(vec2(wx,      wy + wh));
+
+        draw_triangle(nw, ne, se, col);
+        draw_triangle(nw, se, sw, col);
+        draw_line(nw.x, nw.y, ne.x, ne.y, 2.0, edge);
+        draw_line(ne.x, ne.y, se.x, se.y, 2.0, edge);
+        draw_line(se.x, se.y, sw.x, sw.y, 2.0, edge);
+        draw_line(sw.x, sw.y, nw.x, nw.y, 2.0, edge);
     }
 
     pub fn draw_sign(&self, cam: &Camera, ts: f32) {
         let wx = self.tx as f32 * ts;
         let wy = self.ty as f32 * ts;
-        let sp = cam.world_to_screen(vec2(wx + self.tw as f32 * ts / 2.0, wy - 6.0));
+        let ww = self.tw as f32 * ts;
+        // iso top vertex of building is the NW corner projected to screen
+        let mut sp = cam.world_to_screen(vec2(wx + ww * 0.5, wy));
+        sp.y -= 8.0; // lift above the diamond tip in screen space
         if !cam.is_visible(vec2(wx, wy), 200.0) { return; }
 
         let sign_color = match self.kind {

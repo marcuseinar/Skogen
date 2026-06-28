@@ -308,37 +308,85 @@ impl World {
         }
     }
 
-    pub fn draw(&self, cam: &Camera, sprites: &Sprites) {
+    pub fn draw_tiles(&self, cam: &Camera, sprites: &Sprites) {
         let sw = screen_width();
         let sh = screen_height();
 
-        let x0 = ((cam.offset.x / TILE_SIZE) as i32 - 1).max(0);
-        let y0 = ((cam.offset.y / TILE_SIZE) as i32 - 1).max(0);
-        let x1 = ((cam.offset.x + sw) / TILE_SIZE) as i32 + 2;
-        let y1 = ((cam.offset.y + sh) / TILE_SIZE) as i32 + 2;
-        let x1 = x1.min(MAP_W as i32);
-        let y1 = y1.min(MAP_H as i32);
+        // Map screen corners to world, then tile coords, for visible range
+        let margin = 64.0;
+        let corners = [
+            cam.screen_to_world(vec2(-margin, -margin)),
+            cam.screen_to_world(vec2(sw + margin, -margin)),
+            cam.screen_to_world(vec2(-margin, sh + margin)),
+            cam.screen_to_world(vec2(sw + margin, sh + margin)),
+        ];
 
-        for ty in y0..y1 {
-            for tx in x0..x1 {
+        let min_tx = corners.iter()
+            .map(|c| (c.x / TILE_SIZE).floor() as i32 - 1)
+            .min().unwrap_or(0).max(0);
+        let max_tx = corners.iter()
+            .map(|c| (c.x / TILE_SIZE).ceil() as i32 + 1)
+            .max().unwrap_or(0).min(MAP_W as i32 - 1);
+        let min_ty = corners.iter()
+            .map(|c| (c.y / TILE_SIZE).floor() as i32 - 1)
+            .min().unwrap_or(0).max(0);
+        let max_ty = corners.iter()
+            .map(|c| (c.y / TILE_SIZE).ceil() as i32 + 1)
+            .max().unwrap_or(0).min(MAP_H as i32 - 1);
+
+        // Draw in diagonal order (increasing tx+ty) for correct iso painter's algorithm
+        let sum_min = min_tx + min_ty;
+        let sum_max = max_tx + max_ty;
+        for sum in sum_min..=sum_max {
+            let tx_lo = (sum - max_ty).max(min_tx);
+            let tx_hi = (sum - min_ty).min(max_tx);
+            for tx in tx_lo..=tx_hi {
+                let ty = sum - tx;
+                if ty < 0 || ty >= MAP_H as i32 { continue; }
                 let tile = self.get_tile(tx, ty);
                 let sp = cam.world_to_screen(vec2(tx as f32 * TILE_SIZE, ty as f32 * TILE_SIZE));
-                sprites.draw_tile(tile, sp.x, sp.y);
+                sprites.draw_tile(tile, sp);
             }
         }
+    }
 
-        for e in &self.entities {
-            e.draw(cam, sprites);
+    pub fn sorted_objects(&self) -> Vec<DrawCmd> {
+        let mut cmds: Vec<DrawCmd> = Vec::new();
+        for (i, e) in self.entities.iter().enumerate() {
+            if !e.alive { continue; }
+            cmds.push(DrawCmd { depth: e.pos.x + e.pos.y, kind: DrawKind::Entity, index: i });
         }
+        for (i, z) in self.zombies.iter().enumerate() {
+            if !z.alive { continue; }
+            cmds.push(DrawCmd { depth: z.pos.x + z.pos.y, kind: DrawKind::Zombie, index: i });
+        }
+        cmds.sort_by(|a, b| a.depth.partial_cmp(&b.depth).unwrap_or(std::cmp::Ordering::Equal));
+        cmds
+    }
 
+    pub fn draw_object(&self, cmd: &DrawCmd, cam: &Camera, sprites: &Sprites) {
+        match cmd.kind {
+            DrawKind::Entity => self.entities[cmd.index].draw(cam, sprites),
+            DrawKind::Zombie => self.zombies[cmd.index].draw(cam, sprites),
+        }
+    }
+
+    pub fn draw_building_decals(&self, cam: &Camera) {
         for b in &self.buildings {
             b.draw_sign(cam, TILE_SIZE);
             b.draw_containers(cam);
         }
-
-        for z in &self.zombies {
-            z.draw(cam, sprites);
-        }
     }
+}
+
+pub struct DrawCmd {
+    pub depth: f32,
+    pub kind: DrawKind,
+    pub index: usize,
+}
+
+pub enum DrawKind {
+    Entity,
+    Zombie,
 }
 

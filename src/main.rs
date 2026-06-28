@@ -88,9 +88,23 @@ async fn main() {
                 time_alive += dt;
 
                 // --- Draw ---
-                clear_background(Color::new(0.2, 0.38, 0.18, 1.0));
-                world.draw(&camera, &sprites);
-                player.draw(&camera, &sprites);
+                clear_background(Color::new(0.12, 0.22, 0.10, 1.0));
+                // Iso draw: tiles first (diagonal order), then depth-sorted objects
+                world.draw_tiles(&camera, &sprites);
+                world.draw_building_decals(&camera);
+
+                // Insert player at correct depth among entities/zombies
+                let player_depth = player.pos.x + player.pos.y;
+                let cmds = world.sorted_objects();
+                let insert_at = cmds.partition_point(|c| c.depth < player_depth);
+                for i in 0..=cmds.len() {
+                    if i == insert_at {
+                        player.draw(&camera, &sprites);
+                    }
+                    if i < cmds.len() {
+                        world.draw_object(&cmds[i], &camera, &sprites);
+                    }
+                }
                 world.draw_roofs(&camera);
 
                 // Ambient: bright day → dark night → dawn
