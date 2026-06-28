@@ -41,9 +41,8 @@ jobs:
           mkdir -p dist
           cp target/wasm32-unknown-unknown/release/skogen.wasm dist/skogen.wasm
           cp index.html dist/index.html
-          curl --retry 3 -fSsL \
-            -o dist/mq_js_bundle.js \
-            "https://not-fl3.github.io/miniquad-samples/mq_js_bundle.js"
+          # Use the JS bundle committed to the repo (avoids external network fetch)
+          cp mq_js_bundle.js dist/mq_js_bundle.js
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
