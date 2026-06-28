@@ -65,12 +65,17 @@ pub struct Player {
 
 impl Player {
     pub fn new(pos: Vec2) -> Self {
+        let mut inventory = Inventory::new();
+        inventory.slots[0] = Some(Item::Knife);
+        inventory.slots[1] = Some(Item::Shovel);
+        inventory.slots[2] = Some(Item::Food(30));
+        inventory.slots[3] = Some(Item::Water(40));
         Self {
             pos,
             health: 100.0,
             hunger: 100.0,
             thirst: 100.0,
-            inventory: Inventory::new(),
+            inventory,
             facing: vec2(0.0, 1.0),
             alive: true,
             damage_cooldown: 0.0,
@@ -157,8 +162,9 @@ impl Player {
 
         // Interact (loot / harvest)
         if input.interact {
-            let has_axe = self.inventory.slots.iter().any(|s| matches!(s, Some(Item::Axe)));
-            let items = world.interact_near(self.pos, has_axe);
+            let can_harvest = self.inventory.slots.iter()
+                .any(|s| matches!(s, Some(Item::Axe) | Some(Item::Shovel)));
+            let items = world.interact_near(self.pos, can_harvest);
             for item in items {
                 self.inventory.add(item);
             }

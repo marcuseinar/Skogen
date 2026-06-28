@@ -7,6 +7,8 @@ pub enum Item {
     Medicine,
     Wood,
     Stone,
+    Knife,
+    Shovel,
     Axe,
     Crowbar,
     Pistol,
@@ -21,6 +23,8 @@ impl Item {
             Item::Medicine => "Medicin",
             Item::Wood => "Trä",
             Item::Stone => "Sten",
+            Item::Knife => "Kniv",
+            Item::Shovel => "Spade",
             Item::Axe => "Yxa",
             Item::Crowbar => "Kofot",
             Item::Pistol => "Pistol",
@@ -35,6 +39,8 @@ impl Item {
             Item::Medicine => PINK,
             Item::Wood => Color::new(0.5, 0.3, 0.1, 1.0),
             Item::Stone => GRAY,
+            Item::Knife => Color::new(0.75, 0.75, 0.8, 1.0),
+            Item::Shovel => Color::new(0.45, 0.35, 0.2, 1.0),
             Item::Axe | Item::Crowbar => DARKGRAY,
             Item::Pistol => Color::new(0.2, 0.2, 0.2, 1.0),
             Item::Ammo(_) => YELLOW,
@@ -42,7 +48,7 @@ impl Item {
     }
 
     pub fn is_weapon(&self) -> bool {
-        matches!(self, Item::Axe | Item::Crowbar | Item::Pistol)
+        matches!(self, Item::Knife | Item::Shovel | Item::Axe | Item::Crowbar | Item::Pistol)
     }
 
     pub fn is_ranged(&self) -> bool {
@@ -51,6 +57,8 @@ impl Item {
 
     pub fn damage(&self) -> f32 {
         match self {
+            Item::Knife => 22.0,
+            Item::Shovel => 28.0,
             Item::Axe => 34.0,
             Item::Crowbar => 26.0,
             Item::Pistol => 100.0,
@@ -62,7 +70,9 @@ impl Item {
         match self {
             Item::Pistol => 280.0,
             Item::Axe => 64.0,
+            Item::Shovel => 54.0,
             Item::Crowbar => 56.0,
+            Item::Knife => 42.0,
             _ => 40.0,
         }
     }

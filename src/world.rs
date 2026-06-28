@@ -71,8 +71,8 @@ impl World {
     }
 
     pub fn spawn_pos(&self) -> Vec2 {
-        // Spawn near road intersection
-        vec2((MAP_W as f32 / 2.0 + 3.0) * TILE_SIZE, (MAP_H as f32 / 2.0 - 5.0) * TILE_SIZE)
+        // Inside the starting stuga at tile (30,40) near the lake — door centre at tx=32,ty=43
+        vec2(32.0 * TILE_SIZE + 16.0, 42.0 * TILE_SIZE + 8.0)
     }
 
     pub fn generate() -> Self {
@@ -140,7 +140,7 @@ impl World {
         }
 
         // Lakes
-        let lakes: &[(i32, i32, i32)] = &[(22, 35, 9), (88, 72, 11)];
+        let lakes: &[(i32, i32, i32)] = &[(22, 33, 12), (88, 72, 11)];
         for &(lx, ly, r) in lakes {
             for dy in -(r + 2)..=(r + 2) {
                 for dx in -(r + 2)..=(r + 2) {
