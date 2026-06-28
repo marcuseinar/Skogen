@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Skogen — Zombie Survival</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #111;
+      overflow: hidden;
+      touch-action: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    #loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #8bc34a;
+      font-family: monospace;
+      font-size: 22px;
+      letter-spacing: 2px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">LADDAR SKOGEN…</div>
+  <canvas id="glcanvas" tabindex="1"></canvas>
+  <script src="mq_js_bundle.js"></script>
+  <script>
+    load("skogen.wasm").then(() => {
+      const el = document.getElementById("loading");
+      if (el) el.remove();
+    }).catch(console.error);
+  </script>
+</body>
+</html>
