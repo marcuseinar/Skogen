@@ -43,6 +43,7 @@ jobs:
           cp index.html dist/index.html
           # Use the JS bundle committed to the repo (avoids external network fetch)
           cp mq_js_bundle.js dist/mq_js_bundle.js
+          cp sprites.png dist/sprites.png
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

@@ -7,6 +7,7 @@ mod world;
 mod player;
 mod ui;
 mod lighting;
+mod sprites;
 
 use macroquad::prelude::*;
 use camera::Camera;
@@ -14,6 +15,7 @@ use world::World;
 use player::Player;
 use ui::{draw_hud, TouchControls};
 use lighting::LightSystem;
+use sprites::Sprites;
 
 #[derive(PartialEq)]
 enum GameState {
@@ -33,6 +35,8 @@ fn new_game() -> (World, Player, Camera) {
 async fn main() {
     let seed = (get_time() * 1_000_000.0) as u64 ^ 0xdeadbeef;
     macroquad::rand::srand(seed);
+
+    let sprites = Sprites::load().await;
 
     let (mut world, mut player, mut camera) = new_game();
     let mut state = GameState::Playing;
@@ -85,8 +89,8 @@ async fn main() {
 
                 // --- Draw ---
                 clear_background(Color::new(0.2, 0.38, 0.18, 1.0));
-                world.draw(&camera);
-                player.draw(&camera);
+                world.draw(&camera, &sprites);
+                player.draw(&camera, &sprites);
                 world.draw_roofs(&camera);
 
                 // Ambient: bright day → dark night → dawn

@@ -1,5 +1,6 @@
 use macroquad::prelude::*;
 use crate::camera::Camera;
+use crate::sprites::Sprites;
 
 #[derive(PartialEq, Clone, Copy)]
 pub enum ZombieState {
@@ -91,25 +92,10 @@ impl Zombie {
         }
     }
 
-    pub fn draw(&self, cam: &Camera) {
+    pub fn draw(&self, cam: &Camera, sprites: &Sprites) {
         if !self.alive { return; }
         if !cam.is_visible(self.pos, 30.0) { return; }
         let sp = cam.world_to_screen(self.pos);
-
-        // Body
-        let body_color = Color::new(0.55, 0.1, 0.1, 1.0);
-        draw_circle(sp.x, sp.y, 14.0, body_color);
-
-        // Eyes
-        draw_circle(sp.x - 5.0, sp.y - 4.0, 3.5, WHITE);
-        draw_circle(sp.x + 5.0, sp.y - 4.0, 3.5, WHITE);
-        draw_circle(sp.x - 5.0, sp.y - 4.0, 1.5, Color::new(0.8, 0.0, 0.0, 1.0));
-        draw_circle(sp.x + 5.0, sp.y - 4.0, 1.5, Color::new(0.8, 0.0, 0.0, 1.0));
-
-        // Health bar
-        if self.health < 100.0 {
-            draw_rectangle(sp.x - 14.0, sp.y - 22.0, 28.0, 4.0, Color::new(0.3, 0.0, 0.0, 0.8));
-            draw_rectangle(sp.x - 14.0, sp.y - 22.0, 28.0 * (self.health / 100.0), 4.0, RED);
-        }
+        sprites.draw_zombie(sp, self.health, self.wander_dir.x < 0.0);
     }
 }

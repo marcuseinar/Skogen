@@ -3,6 +3,7 @@ use crate::camera::{Camera, TILE_SIZE, MAP_W, MAP_H};
 use crate::buildings::{Building, BuildingKind};
 use crate::entities::{Entity, EntityKind};
 use crate::zombie::Zombie;
+use crate::sprites::Sprites;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum TileKind {
@@ -307,7 +308,7 @@ impl World {
         }
     }
 
-    pub fn draw(&self, cam: &Camera) {
+    pub fn draw(&self, cam: &Camera, sprites: &Sprites) {
         let sw = screen_width();
         let sh = screen_height();
 
@@ -322,37 +323,21 @@ impl World {
             for tx in x0..x1 {
                 let tile = self.get_tile(tx, ty);
                 let sp = cam.world_to_screen(vec2(tx as f32 * TILE_SIZE, ty as f32 * TILE_SIZE));
-                draw_rectangle(sp.x, sp.y, TILE_SIZE + 0.5, TILE_SIZE + 0.5, tile.color());
-
-                // Road markings
-                if tile == TileKind::Road {
-                    if tx % 6 == 0 {
-                        draw_rectangle(sp.x + TILE_SIZE * 0.45, sp.y, TILE_SIZE * 0.1, TILE_SIZE, Color::new(0.85, 0.82, 0.2, 0.5));
-                    }
-                }
-
-                // Forest texture dots
-                if tile == TileKind::Forest {
-                    draw_circle(sp.x + 10.0, sp.y + 8.0, 5.0, Color::new(0.05, 0.22, 0.05, 1.0));
-                    draw_circle(sp.x + 22.0, sp.y + 20.0, 4.0, Color::new(0.05, 0.22, 0.05, 1.0));
-                }
+                sprites.draw_tile(tile, sp.x, sp.y);
             }
         }
 
-        // Draw entities
         for e in &self.entities {
-            e.draw(cam);
+            e.draw(cam, sprites);
         }
 
-        // Draw building signs and containers
         for b in &self.buildings {
             b.draw_sign(cam, TILE_SIZE);
             b.draw_containers(cam);
         }
 
-        // Draw zombies
         for z in &self.zombies {
-            z.draw(cam);
+            z.draw(cam, sprites);
         }
     }
 }

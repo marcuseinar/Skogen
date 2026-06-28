@@ -2,6 +2,7 @@ use macroquad::prelude::*;
 use crate::camera::Camera;
 use crate::loot::Item;
 use crate::world::World;
+use crate::sprites::Sprites;
 
 pub const INVENTORY_SLOTS: usize = 8;
 const PLAYER_SPEED: f32 = 130.0;
@@ -179,31 +180,9 @@ impl Player {
         }
     }
 
-    pub fn draw(&self, cam: &Camera) {
+    pub fn draw(&self, cam: &Camera, sprites: &Sprites) {
         let sp = cam.world_to_screen(self.pos);
-
-        // Shadow
-        draw_ellipse(sp.x, sp.y + 10.0, 12.0, 5.0, 0.0, Color::new(0.0, 0.0, 0.0, 0.25));
-
-        // Body
-        let hurt = self.damage_cooldown > 0.0;
-        let body_col = if hurt { Color::new(1.0, 0.3, 0.3, 1.0) } else { Color::new(0.85, 0.78, 0.6, 1.0) };
-        draw_circle(sp.x, sp.y, 12.0, body_col);
-
-        // Shirt (blue-ish)
-        draw_rectangle(sp.x - 8.0, sp.y, 16.0, 10.0, Color::new(0.3, 0.45, 0.7, 1.0));
-
-        // Head
-        draw_circle(sp.x, sp.y - 10.0, 9.0, Color::new(0.88, 0.72, 0.55, 1.0));
-        // Eyes in facing direction
-        let eye_off = self.facing * 4.0;
-        draw_circle(sp.x + eye_off.x + self.facing.y * 3.0, sp.y + eye_off.y - self.facing.x * 3.0 - 10.0, 2.0, Color::new(0.1, 0.1, 0.1, 1.0));
-
-        // Weapon swing indicator
-        if self.attack_anim > 0.0 {
-            let swing_pos = sp + self.facing * 30.0 * self.attack_anim;
-            draw_circle(swing_pos.x, swing_pos.y, 8.0, Color::new(1.0, 0.8, 0.0, self.attack_anim * 0.7));
-        }
+        sprites.draw_player(sp, self.facing, self.damage_cooldown > 0.0, self.attack_anim);
     }
 
     pub fn active_weapon_name(&self) -> &str {
