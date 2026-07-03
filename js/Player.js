@@ -53,7 +53,7 @@ export class Player {
   get position() { return this.group.position; }
 
   async init(onProgress) {
-    const MODEL_URL = '/models/RobotExpressive.glb';
+    const MODEL_URL = `${import.meta.env.BASE_URL}models/RobotExpressive.glb`;
 
     const loader = new GLTFLoader();
     let gltf;

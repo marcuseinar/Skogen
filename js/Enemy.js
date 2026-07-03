@@ -17,7 +17,7 @@ function loadSharedModel() {
   if (_loadPromise) return _loadPromise;
   _loadPromise = new Promise((resolve) => {
     const loader = new GLTFLoader();
-    loader.load('/models/RobotExpressive.glb',
+    loader.load(`${import.meta.env.BASE_URL}models/RobotExpressive.glb`,
       g => { _sharedGltf = g; resolve(g); },
       undefined,
       () => resolve(null),

@@ -1,8 +1,13 @@
 import { defineConfig } from 'vite';
 
+// GitHub Pages serves the repo at /Skogen/ — use that base for production
+// builds so asset paths resolve correctly. Local dev stays at /.
+const base = process.env.NODE_ENV === 'production' ? '/Skogen/' : '/';
+
 export default defineConfig({
   root: '.',
   publicDir: 'public',
+  base,
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -11,14 +16,5 @@ export default defineConfig({
   server: {
     port: 3000,
     strictPort: true,
-    headers: {
-      // Allow SharedArrayBuffer if ever needed; no-op otherwise
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
-  },
-  // Avoid Vite trying to resolve Rust/WASM artefacts
-  optimizeDeps: {
-    exclude: [],
   },
 });
