@@ -1,132 +1,181 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Skogen — Zombie Survival</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blade & Shadow — 3rd Person Hack-and-Slash</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      background: #111;
+      background: #0b0b0e;
       overflow: hidden;
-      touch-action: none;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      width: 100vw;
+      font-family: 'Segoe UI', system-ui, sans-serif;
     }
-    canvas {
-      display: block;
-      width: 100vw;
-      height: 100vh;
-    }
+
+    canvas { display: block; }
+
+    /* ── Loading screen ──────────────────────────────────── */
     #loading {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      z-index: 10;
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 18px;
+      background: #0b0b0e;
+      z-index: 100;
+      transition: opacity 0.6s ease;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+
+    #loading h1 {
+      font-size: 2.2rem; font-weight: 700; letter-spacing: 4px;
+      color: #e8c87a; text-transform: uppercase;
+    }
+    #loading p { color: #666; font-size: 0.85rem; letter-spacing: 1px; }
+
+    #load-bar-bg {
+      width: 260px; height: 5px;
+      background: #222; border-radius: 3px; overflow: hidden;
+    }
+    #load-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #c9933a, #e8c87a);
+      transition: width 0.15s;
+    }
+
+    /* ── Lock prompt ─────────────────────────────────────── */
+    #lock-prompt {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+      z-index: 50;
+    }
+    #lock-prompt .pill {
+      background: rgba(0,0,0,0.72);
+      border: 1px solid rgba(232,200,122,0.35);
+      border-radius: 30px;
+      padding: 10px 22px;
+      color: #e8c87a;
+      font-size: 0.82rem;
+      letter-spacing: 1px;
+      backdrop-filter: blur(8px);
+      transition: opacity 0.4s;
+    }
+    #lock-prompt.hidden .pill { opacity: 0; }
+
+    /* ── HUD ─────────────────────────────────────────────── */
+    #hud {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    /* Player health bar */
+    #player-hud {
+      position: absolute; bottom: 28px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    #player-name {
+      color: #e8c87a; font-size: 0.7rem; letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .bar-bg {
+      width: 220px; height: 9px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 5px; overflow: hidden;
+    }
+    #player-hp-fill {
+      height: 100%; width: 100%;
+      background: linear-gradient(90deg, #8b1a1a, #c0392b);
+      transition: width 0.25s;
+    }
+
+    /* Combo display */
+    #combo {
+      position: absolute; top: 50%; right: 40px;
+      transform: translateY(-50%);
+      text-align: right;
+      transition: opacity 0.3s;
+    }
+    #combo.hidden { opacity: 0; }
+    #combo-count {
+      font-size: 4rem; font-weight: 900;
+      color: #e8c87a; line-height: 1;
+      text-shadow: 0 0 20px rgba(232,200,122,0.6);
+    }
+    #combo-label {
+      font-size: 0.75rem; letter-spacing: 3px; color: #c9933a;
+      text-transform: uppercase;
+    }
+
+    /* Controls hint */
+    #controls-hint {
+      position: absolute; bottom: 12px; right: 14px;
+      color: rgba(255,255,255,0.3);
+      font-size: 0.68rem; line-height: 1.8; text-align: right;
+    }
+
+    /* Kill counter */
+    #kill-count {
+      position: absolute; top: 18px; left: 18px;
+      color: rgba(232,200,122,0.85);
+      font-size: 0.78rem; letter-spacing: 2px;
+    }
+
+    /* Enemy health bars rendered as DOM overlays by UI.js */
+    .enemy-hp-bar {
+      position: absolute;
+      transform: translateX(-50%);
       pointer-events: none;
     }
-    #loading-text {
-      color: #8bc34a;
-      font-family: monospace;
-      font-size: 22px;
-      letter-spacing: 2px;
+    .enemy-hp-bg {
+      width: 70px; height: 6px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 3px; overflow: hidden;
     }
-    #loading-bar-bg {
-      width: 220px;
-      height: 8px;
-      background: #2a2a2a;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    #loading-bar {
+    .enemy-hp-fill {
       height: 100%;
-      width: 0%;
-      background: #8bc34a;
-      border-radius: 4px;
-      transition: width 0.1s ease-out;
-    }
-    #loading-sub {
-      color: #555;
-      font-family: monospace;
-      font-size: 13px;
-      letter-spacing: 1px;
+      background: linear-gradient(90deg, #4a0000, #8b1a1a);
+      transition: width 0.1s;
     }
   </style>
 </head>
 <body>
+  <!-- Loading -->
   <div id="loading">
-    <div id="loading-text">LADDAR SKOGEN…</div>
-    <div id="loading-bar-bg"><div id="loading-bar"></div></div>
-    <div id="loading-sub">0%</div>
+    <h1>Blade &amp; Shadow</h1>
+    <div id="load-bar-bg"><div id="load-bar"></div></div>
+    <p id="load-text">Initialising…</p>
   </div>
-  <canvas id="glcanvas" tabindex="1"></canvas>
-  <script src="mq_js_bundle.js"></script>
-  <script>
-    (async () => {
-      const textEl  = document.getElementById('loading-text');
-      const barEl   = document.getElementById('loading-bar');
-      const subEl   = document.getElementById('loading-sub');
-      const loadEl  = document.getElementById('loading');
 
-      try {
-        // Fetch the WASM with progress tracking
-        const response = await fetch('skogen.wasm');
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  <!-- Pointer-lock prompt (shown when not locked) -->
+  <div id="lock-prompt">
+    <div class="pill">Click to look around — ESC to release</div>
+  </div>
 
-        const contentLength = response.headers.get('Content-Length');
-        const total = contentLength ? parseInt(contentLength, 10) : 0;
+  <!-- HUD -->
+  <div id="hud">
+    <div id="kill-count">⚔ <span id="kill-num">0</span> KILLS</div>
 
-        const reader = response.body.getReader();
-        let received = 0;
-        const chunks = [];
+    <div id="combo" class="hidden">
+      <div id="combo-count">0</div>
+      <div id="combo-label">HIT COMBO</div>
+    </div>
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-          received += value.length;
+    <div id="player-hud">
+      <div id="player-name">Hero</div>
+      <div class="bar-bg"><div id="player-hp-fill"></div></div>
+    </div>
 
-          const pct = total > 0 ? Math.round((received / total) * 100) : null;
-          barEl.style.width = (pct ?? 50) + '%';
-          subEl.textContent = pct != null
-            ? pct + '%'
-            : (received / 1024).toFixed(0) + ' KB';
-        }
+    <div id="controls-hint">
+      WASD — Move &nbsp;|&nbsp; Shift — Run<br>
+      Click / Space — Attack &nbsp;|&nbsp; Mouse — Camera
+    </div>
+  </div>
 
-        barEl.style.width = '100%';
-        subEl.textContent = '100%';
-        textEl.textContent = 'STARTAR…';
-
-        // Assemble downloaded chunks into a single buffer
-        const total_bytes = chunks.reduce((s, c) => s + c.length, 0);
-        const buffer = new Uint8Array(total_bytes);
-        let pos = 0;
-        for (const chunk of chunks) { buffer.set(chunk, pos); pos += chunk.length; }
-
-        // Create a blob URL so load() reads from memory (no second download)
-        const blob    = new Blob([buffer], { type: 'application/wasm' });
-        const blobUrl = URL.createObjectURL(blob);
-
-        await load(blobUrl);
-
-        URL.revokeObjectURL(blobUrl);
-        loadEl.remove();
-
-      } catch (err) {
-        textEl.textContent = 'FEL VID LADDNING';
-        subEl.textContent  = err.message;
-        barEl.style.background = '#c0392b';
-        console.error(err);
-      }
-    })();
-  </script>
+  <script type="module" src="/js/main.js"></script>
 </body>
 </html>
